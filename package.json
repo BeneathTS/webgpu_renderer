@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "http-server ./",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "BeneathTS",
   "license": "MIT-0",
-  "description": "Simple hardware(?) renderer on webGPU api"
+  "description": "Simple hardware(?) renderer on webGPU api",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
 }
