@@ -1,9 +1,25 @@
 import { initGpuDevice } from '../gpu/init.js'
 
-const window = document.getElementById('output-canvas')
-
 if (!navigator.gpu) {
     throw new Error('WebGPU unsupported from this browser')
 }
 
-await initGpuDevice()
+const {
+    gpuDevice,
+    gpuCommandEncoder,
+    canvasCtx
+} = await initGpuDevice(document.getElementById('output-canvas'))
+
+const pass = gpuCommandEncoder.beginRenderPass({
+    colorAttachments: [
+        {
+            view: canvasCtx.getCurrentTexture().createView(),
+            loadOp: 'clear',
+            storeOp: 'store'
+        }
+    ]
+})
+
+pass.end()
+
+gpuDevice.queue.submit([gpuCommandEncoder.finish()]);
