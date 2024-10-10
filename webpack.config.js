@@ -9,13 +9,21 @@ module.exports = {
         publicPath: '/core/'
     },
     module: {
-        rules: [{
-            test: /\.ts$/,
-            exclude: /node_modules/,
-            use: {
-                loader: 'ts-loader'
+        rules: [
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: 'ts-loader'
+                }
+            },
+            {
+                test: /\.(wgsl|vs|fs)$/,
+                use: {
+                    loader: 'ts-shader-loader',
+                }
             }
-        }]
+        ]
     },
     resolve: {
         extensions: [".ts"]
