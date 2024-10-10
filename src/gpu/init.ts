@@ -1,5 +1,10 @@
-export const initGpuDevice = async function (canvasNode) {
-    const canvasCtx = canvasNode.getContext('webgpu')
+import type { InitGpuDevice } from "./types"
+
+export const initGpuDevice: InitGpuDevice = async function (canvasNode) {
+    if (!canvasNode) {
+        return null
+    }
+    const canvasCtx = <GPUCanvasContext> canvasNode.getContext('webgpu')
 
     const gpuAdapter = await navigator.gpu.requestAdapter()
 
