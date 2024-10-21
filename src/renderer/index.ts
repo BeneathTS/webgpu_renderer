@@ -1,40 +1,29 @@
-import trinagleVertexShader from '../shaders/triangle.wgsl'
+import trinagleShader from '../shaders/triangle.wgsl'
 
 import type { Render } from "./types"
+
+const AMOUNT_OF_TRIANGLES = 100
+const trinaglesData: Array<{ dataBuffer: Float32Array; gpuBuffer: GPUBuffer; bindGroup: GPUBindGroup}> = []
+
+const rand = (min?: number, max?: number): number => {
+  if (min === undefined) {
+    min = 0;
+    max = 1;
+  } else if (max === undefined) {
+    max = min;
+    min = 0;
+  }
+  return min + Math.random() * (max - min);
+};
 
 export const render: Render = function ({
     gpuCommandEncoder,
     gpuDevice,
     canvasCtx
 }) {
-    const vertices = new Float32Array([
-        0.0, 0.5,
-        -0.7, -0.7,
-        0.7, -0.7
-    ])
-
-    const vertexCoordsBuffer = gpuDevice.createBuffer({
-        label: 'triangle coords',
-        size: vertices.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
-    })
-
-    const vertexBufferLayout: GPUVertexBufferLayout = {
-        arrayStride: 8,
-        attributes: [
-            {
-                format: "float32x2",
-                offset: 0,
-                shaderLocation: 0
-            }
-        ]
-    }
-
-    gpuDevice.queue.writeBuffer(vertexCoordsBuffer, 0, vertices)
-
     const module = gpuDevice.createShaderModule({
-        label: "Triangle shader module",
-        code: trinagleVertexShader
+        label: "Triangle vertex module",
+        code: trinagleShader
     })
 
     const renderPipeline = gpuDevice.createRenderPipeline({
@@ -42,7 +31,6 @@ export const render: Render = function ({
         vertex: {
             module,
             entryPoint: 'set_triangle_points',
-            buffers: [vertexBufferLayout]
         },
         fragment: {
             module,
@@ -56,6 +44,47 @@ export const render: Render = function ({
         layout: 'auto'
     })
 
+    for(let i = 0; i < AMOUNT_OF_TRIANGLES; ++i) {
+            const dataBuffer = new Float32Array(
+                4 + // color vars
+                2 + // offset vars
+                2   // scale vars
+            )
+
+        dataBuffer.set(
+            [
+                rand(), rand(), rand(), 1,
+                rand(-0.9, 0.9), rand(-0.9, 0.9),
+                0.3, 0.3
+            ]
+        )
+
+        const gpuBuffer = gpuDevice.createBuffer({
+            label: `uniforms for obj: ${i}`,
+            size: dataBuffer.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        })
+
+        const bindGroup = gpuDevice.createBindGroup({
+             label: `bind group for obj: ${i}`,
+            layout: renderPipeline.getBindGroupLayout(0),
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: gpuBuffer
+                    }
+                }
+            ]
+        })
+
+        trinaglesData.push({
+            dataBuffer,
+            gpuBuffer,
+            bindGroup
+        })
+    }
+
     const pass = gpuCommandEncoder.beginRenderPass({
         colorAttachments: [
             {
@@ -67,8 +96,15 @@ export const render: Render = function ({
     })
 
     pass.setPipeline(renderPipeline)
-    pass.setVertexBuffer(0, vertexCoordsBuffer)
-    pass.draw(vertices.length / 2)
+
+    trinaglesData.forEach(({ dataBuffer, gpuBuffer, bindGroup }) => {
+          gpuDevice.queue.writeBuffer(gpuBuffer, 0, dataBuffer)
+          pass.setBindGroup(0, bindGroup)
+          pass.draw(3)
+    })
+
+    // pass.setBindGroup(0, bindGroup)
+    // pass.draw(3)
 
     pass.end()
 
